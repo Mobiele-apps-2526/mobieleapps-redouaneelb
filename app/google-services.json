@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "356231081799",
+    "firebase_url": "https://hometinder-d4409-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "hometinder-d4409",
+    "storage_bucket": "hometinder-d4409.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:356231081799:android:1a80d5bb5b59a0def9e662",
+        "android_client_info": {
+          "package_name": "com.example.osso"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHuHl9dGGl4l87pqZsynCEGx63Q39ORKQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +18,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Home
@@ -177,19 +179,21 @@ fun CustomSwipeableCard(house: House, onSwipe: (direction: Int) -> Unit) {
                 }
             }
     ) {
-        HouseCard(house = house)
+        HouseCard(house = house, offsetX = offsetX)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HouseCard(house: House) {
+fun HouseCard(house: House, offsetX: Float) {
     Card(
         modifier = Modifier.fillMaxWidth().aspectRatio(0.75f),
         shape = RoundedCornerShape(16.dp)
     ) {
         Box {
             val pagerState = rememberPagerState { house.imageUrls.size }
+            val coroutineScope = rememberCoroutineScope()
+
             HorizontalPager(state = pagerState) {
                 page ->
                 AsyncImage(
@@ -200,6 +204,29 @@ fun HouseCard(house: House) {
                 )
             }
 
+            // Clickable areas for image navigation
+            Row(Modifier.fillMaxSize()) {
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable { 
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
+                        }
+                    }
+                )
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable { 
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(house.imageUrls.size - 1))
+                        }
+                     }
+                )
+            }
+
+            // Gradient overlay for text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -209,6 +236,23 @@ fun HouseCard(house: House) {
                             startY = 600f
                         )
                     )
+            )
+
+            // Swipe indicators (Heart and X)
+            val likeAlpha by animateFloatAsState(targetValue = if (offsetX > 0) (offsetX / 300f).coerceIn(0f, 1f) else 0f)
+            val dislikeAlpha by animateFloatAsState(targetValue = if (offsetX < 0) (abs(offsetX) / 300f).coerceIn(0f, 1f) else 0f)
+
+            Icon(
+                imageVector = Icons.Default.Favorite,
+                contentDescription = "Like",
+                tint = Color.Green.copy(alpha = likeAlpha),
+                modifier = Modifier.align(Alignment.Center).size(100.dp)
+            )
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Dislike",
+                tint = Color.Red.copy(alpha = dislikeAlpha),
+                modifier = Modifier.align(Alignment.Center).size(100.dp)
             )
 
             Column(

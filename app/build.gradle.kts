@@ -3,7 +3,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    }
+    id("com.google.gms.google-services")
+}
 
 android {
     namespace = "com.example.osso"
@@ -76,4 +77,7 @@ dependencies {
 
     // Coil for image loading
     implementation(libs.coil.compose)
+
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
 }
