@@ -18,10 +18,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -76,77 +73,131 @@ fun OssoApp(viewModel: HouseViewModel) {
 
     Scaffold(
         topBar = { OssoTopAppBar() },
-        bottomBar = { OssoBottomBar(navState, viewModel) }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (navState) {
-                is NavigationState.Home -> HomeScreen(uiState, viewModel)
-                is NavigationState.LikedHouses -> LikedScreen(uiState)
+        bottomBar = { OssoBottomBar(navState, viewModel) },
+        floatingActionButton = { 
+            FloatingActionButton(
+                onClick = { viewModel.navigateToHome() },
+                containerColor = Color(0xFF0091EA),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp)
+            ) {
+                Icon(Icons.Default.Layers, contentDescription = "Home", tint = Color.White)
+            }
+         },
+        floatingActionButtonPosition = FabPosition.Center,
+        content = { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                when (navState) {
+                    is NavigationState.Home -> HomeScreen(uiState, viewModel)
+                    is NavigationState.LikedHouses -> LikedScreen(uiState)
+                }
             }
         }
-    }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OssoTopAppBar() {
     TopAppBar(
-        title = {
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = "App Logo",
-                modifier = Modifier.height(32.dp)
-            )
-        },
+        title = { OssoLogo() },
         actions = {
             IconButton(onClick = { /* TODO: Implement filter */ }) {
                 Icon(imageVector = Icons.Default.FilterList, contentDescription = "Filter")
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.White
+        )
+    )
+}
+
+@Composable
+fun OssoLogo() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_launcher_foreground), // Placeholder
+            contentDescription = "Osso Logo",
+            tint = Color(0xFF0091EA),
+            modifier = Modifier.size(32.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "OSSO",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0091EA)
+        )
+    }
+}
+
+@Composable
+fun OssoBottomBar(navState: NavigationState, viewModel: HouseViewModel) {
+    BottomAppBar(
+        containerColor = Color.White,
+        actions = {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                IconButton(onClick = { /* TODO */ }) {
+                    Icon(Icons.Default.LocationOn, contentDescription = "Location", tint = Color.Gray)
+                }
+                IconButton(onClick = { viewModel.navigateToLikedHouses() }) {
+                    Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorites", tint = Color.Gray)
+                }
+                IconButton(onClick = { /* TODO */ }) {
+                    Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Messages", tint = Color.Gray)
+                }
+                IconButton(onClick = { /* TODO */ }) {
+                    Icon(Icons.Default.PersonOutline, contentDescription = "Profile", tint = Color.Gray)
+                }
             }
         }
     )
 }
 
 @Composable
-fun OssoBottomBar(navState: NavigationState, viewModel: HouseViewModel) {
-    NavigationBar {
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            label = { Text("Home") },
-            selected = navState is NavigationState.Home,
-            onClick = { viewModel.navigateToHome() }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Favorite, contentDescription = "Liked") },
-            label = { Text("Liked") },
-            selected = navState is NavigationState.LikedHouses,
-            onClick = { viewModel.navigateToLikedHouses() }
-        )
+fun HomeScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5))) {
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState.houses.isEmpty()) {
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                Text("No more houses! Check back later.", fontSize = 18.sp)
+            }
+        } else {
+            val currentHouse = uiState.houses.last() // Get the top house
+            Box(modifier = Modifier.weight(1f).padding(16.dp), contentAlignment = Alignment.Center) {
+                CustomSwipeableCard(house = currentHouse, onSwipe = {
+                    if (it > 0) viewModel.likeHouse(currentHouse) else viewModel.dislikeHouse(currentHouse)
+                })
+            }
+        }
+
+        // Action Buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ActionButton(icon = Icons.Default.Close, color = Color.Red, onClick = { viewModel.dislikeHouse(uiState.houses.last()) })
+            ActionButton(icon = Icons.Default.Refresh, color = Color.Gray, onClick = { viewModel.undoLastSwipe() })
+            ActionButton(icon = Icons.Default.Check, color = Color.Green, onClick = { viewModel.likeHouse(uiState.houses.last()) })
+        }
     }
 }
 
 @Composable
-fun HomeScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
-    if (uiState.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    val houses = uiState.houses
-    if (houses.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No more houses! Check back later.", fontSize = 18.sp)
-        }
-        return
-    }
-
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-        houses.reversed().forEach { house ->
-            CustomSwipeableCard(house = house, onSwipe = {
-                if (it > 0) viewModel.likeHouse(house) else viewModel.dislikeHouse(house)
-            })
-        }
+fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = Color.White,
+        contentColor = color,
+        shape = CircleShape,
+        modifier = Modifier.size(56.dp)
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
     }
 }
 
@@ -179,15 +230,15 @@ fun CustomSwipeableCard(house: House, onSwipe: (direction: Int) -> Unit) {
                 }
             }
     ) {
-        HouseCard(house = house, offsetX = offsetX)
+        HouseCard(house = house)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HouseCard(house: House, offsetX: Float) {
+fun HouseCard(house: House) {
     Card(
-        modifier = Modifier.fillMaxWidth().aspectRatio(0.75f),
+        modifier = Modifier.fillMaxWidth().aspectRatio(0.85f).clip(RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp)
     ) {
         Box {
@@ -204,82 +255,90 @@ fun HouseCard(house: House, offsetX: Float) {
                 )
             }
 
-            // Clickable areas for image navigation
-            Row(Modifier.fillMaxSize()) {
-                Box(modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clickable { 
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
-                        }
-                    }
-                )
-                Box(modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clickable { 
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(house.imageUrls.size - 1))
-                        }
-                     }
-                )
-            }
-
             // Gradient overlay for text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black),
-                            startY = 600f
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            startY = 800f
                         )
                     )
             )
 
-            // Swipe indicators (Heart and X)
-            val likeAlpha by animateFloatAsState(targetValue = if (offsetX > 0) (offsetX / 300f).coerceIn(0f, 1f) else 0f)
-            val dislikeAlpha by animateFloatAsState(targetValue = if (offsetX < 0) (abs(offsetX) / 300f).coerceIn(0f, 1f) else 0f)
+            // Clickable areas for image navigation
+            Row(Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.weight(1f).fillMaxHeight().clickable { 
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
+                    }
+                })
+                Box(modifier = Modifier.weight(1f).fillMaxHeight().clickable { 
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(house.imageUrls.size - 1))
+                    }
+                })
+            }
 
-            Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = "Like",
-                tint = Color.Green.copy(alpha = likeAlpha),
-                modifier = Modifier.align(Alignment.Center).size(100.dp)
-            )
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Dislike",
-                tint = Color.Red.copy(alpha = dislikeAlpha),
-                modifier = Modifier.align(Alignment.Center).size(100.dp)
-            )
+            // Price Chip
+            Card(
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF0091EA))
+            ) {
+                Text(
+                    text = "€ ${String.format("%,d", house.price)}",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
 
+            // Content at the bottom
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "€ ${house.price}",
+                    text = house.propertyType, // "Huis"
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = house.address,
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = house.address,
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
+                // Info Tags
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    InfoTag("${house.bedrooms} Slaapkamers")
+                    InfoTag("${house.bathrooms} Badkamer")
+                    InfoTag("${house.squareFootage}m² Woonbaar")
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row {
+                    InfoTag("${house.gardenSize}m² Tuin")
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                // Pager indicator
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
                     repeat(pagerState.pageCount) { iteration ->
-                        val color = if (pagerState.currentPage == iteration) Color.White else Color.Gray
+                        val color = if (pagerState.currentPage == iteration) Color.White else Color.Gray.copy(alpha = 0.5f)
                         Box(
                             modifier = Modifier
                                 .padding(2.dp)
@@ -291,6 +350,18 @@ fun HouseCard(house: House, offsetX: Float) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun InfoTag(text: String) {
+    Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.3f))) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }
 

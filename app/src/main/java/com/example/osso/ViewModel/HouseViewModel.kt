@@ -20,6 +20,8 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
     private val _navigationState = MutableStateFlow<NavigationState>(NavigationState.Home)
     val navigationState: StateFlow<NavigationState> = _navigationState.asStateFlow()
 
+    private var lastSwipedHouse: House? = null
+
     init {
         loadHouses()
     }
@@ -37,6 +39,7 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
 
     fun likeHouse(house: House) {
         viewModelScope.launch {
+            lastSwipedHouse = house
             repository.likeHouse(house.id, getCurrentUserId())
             _uiState.update { currentState ->
                 currentState.copy(
@@ -49,12 +52,22 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
 
     fun dislikeHouse(house: House) {
         viewModelScope.launch {
+            lastSwipedHouse = house
             repository.dislikeHouse(house.id, getCurrentUserId())
             _uiState.update { currentState ->
                 currentState.copy(
                     houses = currentState.houses.filterNot { it.id == house.id }
                 )
             }
+        }
+    }
+
+    fun undoLastSwipe() {
+        lastSwipedHouse?.let {
+            _uiState.update { currentState ->
+                currentState.copy(houses = currentState.houses + it)
+            }
+            lastSwipedHouse = null // Prevent multiple undos
         }
     }
 

@@ -7,6 +7,7 @@ data class House(
     val bedrooms: Int = 0,
     val bathrooms: Int = 0,
     val squareFootage: Int = 0,
+    val gardenSize: Int = 0,
     val propertyType: String = "",
     val description: String = "",
     val imageUrls: List<String> = emptyList(),
