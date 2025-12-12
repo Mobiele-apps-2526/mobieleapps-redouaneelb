@@ -61,6 +61,17 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
             }
         }
     }
+    
+    fun removeFromFavorites(house: House) {
+        viewModelScope.launch {
+            repository.dislikeHouse(house.id, getCurrentUserId())
+            _uiState.update { currentState ->
+                currentState.copy(
+                    likedHouses = currentState.likedHouses.filterNot { it.id == house.id }
+                )
+            }
+        }
+    }
 
     fun undoLastSwipe() {
         lastSwipedHouse?.let {

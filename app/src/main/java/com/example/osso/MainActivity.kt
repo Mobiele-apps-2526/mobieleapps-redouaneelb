@@ -11,8 +11,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -72,52 +73,35 @@ fun OssoApp(viewModel: HouseViewModel) {
     val navState by viewModel.navigationState.collectAsState()
 
     Scaffold(
-        topBar = { OssoTopAppBar() },
-        bottomBar = { OssoBottomBar(navState, viewModel) },
-        content = { padding ->
-            Box(modifier = Modifier.padding(padding)) {
-                when (navState) {
-                    is NavigationState.Home -> HomeScreen(uiState, viewModel)
-                    is NavigationState.LikedHouses -> LikedScreen(uiState)
-                }
+        bottomBar = { OssoBottomBar(navState, viewModel) }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding) 
+        ) {
+            when (navState) {
+                is NavigationState.Home -> HomeScreen(uiState, viewModel)
+                is NavigationState.LikedHouses -> LikedScreen(uiState, viewModel)
             }
+
+            OssoLogo(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            )
         }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun OssoTopAppBar() {
-    TopAppBar(
-        title = { OssoLogo() },
-        actions = {
-            IconButton(onClick = { /* TODO: Implement filter */ }) {
-                Icon(imageVector = Icons.Default.FilterList, contentDescription = "Filter")
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.White
-        )
-    )
-}
-
-@Composable
-fun OssoLogo() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground), // Placeholder
-            contentDescription = "Osso Logo",
-            tint = Color(0xFF0091EA),
-            modifier = Modifier.size(32.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "OSSO",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF0091EA)
-        )
     }
+}
+
+
+@Composable
+fun OssoLogo(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(id = R.drawable.logo),
+        contentDescription = "Osso Logo",
+        modifier = modifier.height(40.dp) 
+    )
 }
 
 @Composable
@@ -132,7 +116,7 @@ fun OssoBottomBar(navState: NavigationState, viewModel: HouseViewModel) {
         NavigationBarItem(
             selected = navState is NavigationState.LikedHouses,
             onClick = { viewModel.navigateToLikedHouses() },
-            icon = { Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorites") },
+            icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
             colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFF0091EA), unselectedIconColor = Color.Gray)
         )
         NavigationBarItem(
@@ -159,8 +143,10 @@ fun OssoBottomBar(navState: NavigationState, viewModel: HouseViewModel) {
 @Composable
 fun HomeScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5))) {
-        val houses = uiState.houses
+        Spacer(Modifier.height(80.dp))
+
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            val houses = uiState.houses
              if (uiState.isLoading) {
                 CircularProgressIndicator()
             } else if (houses.isEmpty()) {
@@ -173,7 +159,6 @@ fun HomeScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
             }
         }
 
-        // Action Buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -181,10 +166,10 @@ fun HomeScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (houses.isNotEmpty()) {
-                ActionButton(icon = Icons.Default.Close, color = Color.Red, onClick = { viewModel.dislikeHouse(houses.last()) })
+            if (uiState.houses.isNotEmpty()) {
+                ActionButton(icon = Icons.Default.Close, color = Color.Red, onClick = { viewModel.dislikeHouse(uiState.houses.last()) })
                 ActionButton(icon = Icons.Default.Refresh, color = Color.Gray, onClick = { viewModel.undoLastSwipe() })
-                ActionButton(icon = Icons.Default.Favorite, color = Color.Green, onClick = { viewModel.likeHouse(houses.last()) })
+                ActionButton(icon = Icons.Default.Favorite, color = Color.Green, onClick = { viewModel.likeHouse(uiState.houses.last()) })
             }
         }
     }
@@ -218,13 +203,13 @@ fun CustomSwipeableCard(
                 rotationZ = (offsetX / 50f).coerceIn(-15f, 15f),
                 alpha = (1 - abs(offsetX) / 400f).coerceIn(0f, 1f)
             )
-            .pointerInput(house.id) { // Use house.id as the key
+            .pointerInput(house.id) { 
                 detectDragGestures(
                     onDragEnd = {
                         coroutineScope.launch {
                             when {
-                                offsetX > 300 -> onSwipe(1) // Swiped Right
-                                offsetX < -300 -> onSwipe(-1) // Swiped Left
+                                offsetX > 300 -> onSwipe(1) 
+                                offsetX < -300 -> onSwipe(-1) 
                             }
                             offsetX = 0f
                         }
@@ -260,7 +245,6 @@ fun HouseCard(house: House, offsetX: Float) {
                 )
             }
 
-            // Gradient overlay for text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -272,7 +256,6 @@ fun HouseCard(house: House, offsetX: Float) {
                     )
             )
 
-            // Clickable areas for image navigation
             Row(Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.weight(1f).fillMaxHeight().clickable { 
                     coroutineScope.launch {
@@ -286,7 +269,6 @@ fun HouseCard(house: House, offsetX: Float) {
                 })
             }
 
-            // Swipe indicators (Heart and X)
             val likeAlpha by animateFloatAsState(targetValue = if (offsetX > 0) (offsetX / 300f).coerceIn(0f, 1f) else 0f)
             val dislikeAlpha by animateFloatAsState(targetValue = if (offsetX < 0) (abs(offsetX) / 300f).coerceIn(0f, 1f) else 0f)
 
@@ -303,7 +285,6 @@ fun HouseCard(house: House, offsetX: Float) {
                 modifier = Modifier.align(Alignment.Center).size(100.dp)
             )
 
-            // Price Chip
             Card(
                 modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
                 shape = RoundedCornerShape(8.dp),
@@ -317,14 +298,13 @@ fun HouseCard(house: House, offsetX: Float) {
                 )
             }
 
-            // Content at the bottom
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
             ) {
                 Text(
-                    text = house.propertyType, // "Huis"
+                    text = house.propertyType, 
                     color = Color.White,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold
@@ -341,7 +321,6 @@ fun HouseCard(house: House, offsetX: Float) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Info Tags
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     InfoTag("${house.bedrooms} Slaapkamers")
                     InfoTag("${house.bathrooms} Badkamer")
@@ -354,7 +333,6 @@ fun HouseCard(house: House, offsetX: Float) {
 
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                // Pager indicator
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -388,27 +366,100 @@ fun InfoTag(text: String) {
 }
 
 @Composable
-fun LikedScreen(uiState: HouseUiState) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
-        items(uiState.likedHouses) { house ->
-            Card(
+fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(Modifier.height(80.dp))
+        
+        // Search Bar
+        var searchText by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = searchText,
+            onValueChange = { searchText = it },
+            label = { Text("Zoek prijs, locatie, titel,...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = CircleShape
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Filter Chips
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = true, onClick = { }, label = { Text("Alles") })
+            FilterChip(selected = false, onClick = { }, label = { Text("Huizen") })
+            FilterChip(selected = false, onClick = { }, label = { Text("Appartementen") })
+            // Add more filters as needed
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Text("Alles wat jij leuk vindt", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+        Spacer(Modifier.height(16.dp))
+
+        // Liked Houses Grid
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(uiState.likedHouses, key = { it.id }) {
+                house ->
+                LikedHouseCard(house = house, onDislike = { viewModel.removeFromFavorites(house) })
+            }
+        }
+    }
+}
+
+@Composable
+fun LikedHouseCard(house: House, onDislike: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(modifier = Modifier.height(220.dp)) {
+            AsyncImage(
+                model = house.imageUrls.firstOrNull(),
+                contentDescription = house.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Gradient Overlay
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(
-                        model = house.imageUrls.firstOrNull(),
-                        contentDescription = "House Image",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(100.dp)
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                            startY = 300f
+                        )
                     )
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(text = house.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text(text = "€ ${house.price}", color = Color.Gray, fontSize = 16.sp)
-                    }
-                }
+            )
+
+            // Favorite Button
+            IconButton(
+                onClick = onDislike,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Icon(Icons.Filled.Favorite, contentDescription = "Dislike", tint = Color(0xFF0091EA))
+            }
+            
+            // House Info
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            ) {
+                Text(house.propertyType, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("${house.bedrooms} slp ‖ ${house.squareFootage} m²", color = Color.White, fontSize = 14.sp)
+                Text(house.address, color = Color.White, fontSize = 12.sp)
             }
         }
     }
