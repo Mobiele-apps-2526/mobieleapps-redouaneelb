@@ -365,8 +365,11 @@ fun InfoTag(text: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
+    val filters = listOf("Alles", "Huis", "Appartement", "Studio", "Kot")
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -389,10 +392,13 @@ fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
 
         // Filter Chips
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = true, onClick = { }, label = { Text("Alles") })
-            FilterChip(selected = false, onClick = { }, label = { Text("Huizen") })
-            FilterChip(selected = false, onClick = { }, label = { Text("Appartementen") })
-            // Add more filters as needed
+            filters.forEach { filter ->
+                FilterChip(
+                    selected = uiState.selectedFilter.equals(filter, ignoreCase = true),
+                    onClick = { viewModel.setFilter(filter) },
+                    label = { Text(filter) }
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
@@ -407,7 +413,7 @@ fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(uiState.likedHouses, key = { it.id }) {
+            items(uiState.filteredLikedHouses, key = { it.id }) {
                 house ->
                 LikedHouseCard(house = house, onDislike = { viewModel.removeFromFavorites(house) })
             }

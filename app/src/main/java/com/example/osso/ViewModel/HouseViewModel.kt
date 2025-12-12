@@ -1,8 +1,6 @@
 package com.example.osso.ViewModel
 
-
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.osso.models.House
 import com.example.osso.repositories.HouseRepository
@@ -73,6 +71,10 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
         }
     }
 
+    fun setFilter(filter: String) {
+        _uiState.update { it.copy(selectedFilter = filter) }
+    }
+
     fun undoLastSwipe() {
         lastSwipedHouse?.let {
             _uiState.update { currentState ->
@@ -104,8 +106,16 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
 data class HouseUiState(
     val houses: List<House> = emptyList(),
     val likedHouses: List<House> = emptyList(),
-    val isLoading: Boolean = true
-)
+    val isLoading: Boolean = true,
+    val selectedFilter: String = "Alles"
+) {
+    val filteredLikedHouses: List<House>
+        get() = if (selectedFilter == "Alles") {
+            likedHouses
+        } else {
+            likedHouses.filter { it.propertyType.equals(selectedFilter, ignoreCase = true) }
+        }
+}
 
 sealed class NavigationState {
     object Home : NavigationState()

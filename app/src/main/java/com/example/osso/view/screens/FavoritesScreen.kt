@@ -31,7 +31,8 @@ fun FavoritesScreen(
     onNavigateToDetails: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val favoriteHouses = uiState.likedHouses
+    val favoriteHouses = uiState.filteredLikedHouses // Use the filtered list
+    val filters = listOf("Alles", "Huis", "Appartement", "Studio", "Kot")
 
     Scaffold(
         containerColor = Color(0xFFF5F5F5),
@@ -59,52 +60,66 @@ fun FavoritesScreen(
             )
         }
     ) { padding ->
-        if (favoriteHouses.isEmpty()) {
-            Box(
+        Column(modifier = Modifier.padding(padding)) {
+            // Filter Chips
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
-                ) {
-                    Icon(
-                        Icons.Default.FavoriteBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(100.dp),
-                        tint = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Geen favorieten",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Swipe rechts om huizen op te slaan",
-                        fontSize = 14.sp,
-                        color = Color.Gray
+                filters.forEach { filter ->
+                    FilterChip(
+                        selected = uiState.selectedFilter.equals(filter, ignoreCase = true),
+                        onClick = { viewModel.setFilter(filter) },
+                        label = { Text(filter) }
                     )
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(favoriteHouses, key = { it.id }) { house ->
-                    FavoriteHouseCard(
-                        house = house,
-                        onRemoveFavorite = { viewModel.dislikeHouse(house) },
-                        onClick = { onNavigateToDetails(house.id) }
-                    )
+
+            if (favoriteHouses.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.FavoriteBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(100.dp),
+                            tint = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = if (uiState.selectedFilter != "Alles") "Geen resultaten" else "Geen favorieten",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (uiState.selectedFilter != "Alles") "Probeer een ander filter" else "Swipe rechts om huizen op te slaan",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(favoriteHouses, key = { it.id }) { house ->
+                        FavoriteHouseCard(
+                            house = house,
+                            onRemoveFavorite = { viewModel.removeFromFavorites(house) },
+                            onClick = { onNavigateToDetails(house.id) }
+                        )
+                    }
                 }
             }
         }
