@@ -65,11 +65,14 @@ fun FavoritesScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(IntrinsicSize.Min) // Ensure all chips have the same height
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 filters.forEach { filter ->
                     FilterChip(
+                        modifier = Modifier.fillMaxHeight(),
                         selected = uiState.selectedFilter.equals(filter, ignoreCase = true),
                         onClick = { viewModel.setFilter(filter) },
                         label = { Text(filter) }

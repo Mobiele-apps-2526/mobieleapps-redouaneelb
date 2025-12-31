@@ -97,6 +97,24 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
         _navigationState.value = NavigationState.Home
     }
 
+    fun navigateToMap() {
+        viewModelScope.launch {
+            repository.getLikedHouses(getCurrentUserId()).collect { likedHouses ->
+                _uiState.update { it.copy(likedHouses = likedHouses) }
+            }
+        }
+        _navigationState.value = NavigationState.Map
+    }
+
+    fun navigateToChat() {
+        viewModelScope.launch {
+            repository.getLikedHouses(getCurrentUserId()).collect { likedHouses ->
+                _uiState.update { it.copy(likedHouses = likedHouses) }
+            }
+        }
+        _navigationState.value = NavigationState.Chat
+    }
+
     private fun getCurrentUserId(): String {
         // In a real app, this would come from authentication
         return "user_123"
@@ -110,7 +128,7 @@ data class HouseUiState(
     val selectedFilter: String = "Alles"
 ) {
     val filteredLikedHouses: List<House>
-        get() = if (selectedFilter == "Alles") {
+        get() = if (selectedFilter.equals("Alles", ignoreCase = true)) {
             likedHouses
         } else {
             likedHouses.filter { it.propertyType.equals(selectedFilter, ignoreCase = true) }
@@ -120,4 +138,6 @@ data class HouseUiState(
 sealed class NavigationState {
     object Home : NavigationState()
     object LikedHouses : NavigationState()
+    object Map : NavigationState()
+    object Chat : NavigationState()
 }

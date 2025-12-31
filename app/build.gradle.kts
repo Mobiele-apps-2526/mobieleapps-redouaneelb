@@ -75,6 +75,12 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database.ktx)
 
+    // Google Maps & Location
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location) // This was missing
+    implementation(libs.accompanist.permissions)
+
     // Coil for image loading
     implementation(libs.coil.compose)
 

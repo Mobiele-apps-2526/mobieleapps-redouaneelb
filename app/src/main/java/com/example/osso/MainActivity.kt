@@ -42,6 +42,8 @@ import com.example.osso.ViewModel.HouseUiState
 import com.example.osso.ViewModel.NavigationState
 import com.example.osso.models.House
 import com.example.osso.repositories.HouseRepository
+import com.example.osso.view.screens.ChatScreen
+import com.example.osso.view.screens.MapScreen
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -83,6 +85,8 @@ fun OssoApp(viewModel: HouseViewModel) {
             when (navState) {
                 is NavigationState.Home -> HomeScreen(uiState, viewModel)
                 is NavigationState.LikedHouses -> LikedScreen(uiState, viewModel)
+                is NavigationState.Map -> MapScreen(viewModel)
+                is NavigationState.Chat -> ChatScreen(viewModel = viewModel, onNavigateBack = { viewModel.navigateToHome() })
             }
 
             OssoLogo(
@@ -108,10 +112,10 @@ fun OssoLogo(modifier: Modifier = Modifier) {
 fun OssoBottomBar(navState: NavigationState, viewModel: HouseViewModel) {
     NavigationBar(containerColor = Color.White) {
         NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO */ },
+            selected = navState is NavigationState.Map,
+            onClick = { viewModel.navigateToMap() },
             icon = { Icon(Icons.Default.LocationOn, contentDescription = "Location") },
-            colors = NavigationBarItemDefaults.colors(unselectedIconColor = Color.Gray)
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFF0091EA), unselectedIconColor = Color.Gray)
         )
         NavigationBarItem(
             selected = navState is NavigationState.LikedHouses,
@@ -126,16 +130,10 @@ fun OssoBottomBar(navState: NavigationState, viewModel: HouseViewModel) {
             colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFF0091EA), unselectedIconColor = Color.Gray)
         )
         NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO */ },
+            selected = navState is NavigationState.Chat,
+            onClick = { viewModel.navigateToChat() },
             icon = { Icon(Icons.Default.ChatBubbleOutline, contentDescription = "Messages") },
-            colors = NavigationBarItemDefaults.colors(unselectedIconColor = Color.Gray)
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO */ },
-            icon = { Icon(Icons.Default.PersonOutline, contentDescription = "Profile") },
-            colors = NavigationBarItemDefaults.colors(unselectedIconColor = Color.Gray)
+            colors = NavigationBarItemDefaults.colors(selectedIconColor = Color(0xFF0091EA), unselectedIconColor = Color.Gray)
         )
     }
 }
@@ -326,10 +324,6 @@ fun HouseCard(house: House, offsetX: Float) {
                     InfoTag("${house.bathrooms} Badkamer")
                     InfoTag("${house.squareFootage}m² Woonbaar")
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row {
-                    InfoTag("${house.gardenSize}m² Tuin")
-                }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 
@@ -368,7 +362,7 @@ fun InfoTag(text: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
-    val filters = listOf("Alles", "Huis", "Appartement", "Studio", "Kot")
+    val filters = listOf("Alles", "Huis", "Appartement", "Studio") // "Kot" removed
 
     Column(
         modifier = Modifier
@@ -391,12 +385,16 @@ fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
         Spacer(Modifier.height(16.dp))
 
         // Filter Chips
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround, // Distribute buttons evenly
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             filters.forEach { filter ->
                 FilterChip(
                     selected = uiState.selectedFilter.equals(filter, ignoreCase = true),
                     onClick = { viewModel.setFilter(filter) },
-                    label = { Text(filter) }
+                    label = { Text(text = filter, maxLines = 1) }
                 )
             }
         }
@@ -405,7 +403,7 @@ fun LikedScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
 
         Text("Alles wat jij leuk vindt", fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Liked Houses Grid
         LazyVerticalGrid(
