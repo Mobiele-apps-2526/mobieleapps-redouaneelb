@@ -83,7 +83,7 @@ fun OssoApp(viewModel: HouseViewModel) {
             when (navState) {
                 is NavigationState.Home -> HomeScreen(uiState, viewModel)
                 is NavigationState.LikedHouses -> FavoritesScreen(uiState, viewModel)
-                is NavigationState.Map -> MapScreen(viewModel)
+                is NavigationState.Map -> MapScreen(uiState, viewModel)
                 is NavigationState.Chat -> ChatScreen(viewModel = viewModel, onNavigateBack = { viewModel.navigateToHome() })
             }
 
