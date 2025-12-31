@@ -29,9 +29,10 @@ Week 10 (01/12): 10 uren:
 De like page met de functionaliteiten en de app logo en het inladen van de app.
 
 
-Week 11 (08/12): 3 uren:
+Week 11 (08/12): 13 uren:
 
+De map pagina gemaakt met de functionaliteiten.
 
-
-Week 12 en volgende weken (15/12): ..... uren:
+Week 12 en volgende weken (15/12): 3 uren:
+Database aangepast om goeie afbeelding en chat pagina.
 
