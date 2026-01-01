@@ -21,10 +21,11 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
     private var lastSwipedHouse: House? = null
 
     init {
-        loadHouses()
+        loadInitialData()
     }
 
-    private fun loadHouses() {
+    private fun loadInitialData() {
+        // Listener for the main house stack
         viewModelScope.launch {
             repository.getHouses().collect { houses ->
                 _uiState.update { it.copy(
@@ -33,46 +34,51 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
                 ) }
             }
         }
+
+        // The single, persistent listener for liked houses. This is the ONLY source of truth.
+        viewModelScope.launch {
+            repository.getLikedHouses(getCurrentUserId()).collect { likedHouses ->
+                _uiState.update { it.copy(likedHouses = likedHouses) }
+            }
+        }
     }
 
     fun likeHouse(house: House) {
         viewModelScope.launch {
             lastSwipedHouse = house
-            repository.likeHouse(house.id, getCurrentUserId())
+            // FIX: Immediately update the swiping stack locally for a snappy UI.
             _uiState.update { currentState ->
-                currentState.copy(
-                    houses = currentState.houses.filterNot { it.id == house.id },
-                    likedHouses = currentState.likedHouses + house
-                )
+                currentState.copy(houses = currentState.houses.filterNot { it.id == house.id })
             }
+            // The persistent listener in init{} will handle updating the likedHouses list from the server.
+            repository.likeHouse(house.id, getCurrentUserId())
         }
     }
 
     fun dislikeHouse(house: House) {
         viewModelScope.launch {
             lastSwipedHouse = house
-            repository.dislikeHouse(house.id, getCurrentUserId())
+            // FIX: Immediately update the swiping stack locally.
             _uiState.update { currentState ->
-                currentState.copy(
-                    houses = currentState.houses.filterNot { it.id == house.id }
-                )
+                currentState.copy(houses = currentState.houses.filterNot { it.id == house.id })
             }
+            repository.dislikeHouse(house.id, getCurrentUserId())
         }
     }
     
     fun removeFromFavorites(house: House) {
         viewModelScope.launch {
+            // Only write to the repository. The persistent listener will update the UI.
             repository.dislikeHouse(house.id, getCurrentUserId())
-            _uiState.update { currentState ->
-                currentState.copy(
-                    likedHouses = currentState.likedHouses.filterNot { it.id == house.id }
-                )
-            }
         }
     }
 
     fun setFilter(filter: String) {
         _uiState.update { it.copy(selectedFilter = filter) }
+    }
+    
+    fun setSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
     }
 
     fun undoLastSwipe() {
@@ -80,16 +86,11 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
             _uiState.update { currentState ->
                 currentState.copy(houses = currentState.houses + it)
             }
-            lastSwipedHouse = null // Prevent multiple undos
+            lastSwipedHouse = null
         }
     }
 
     fun navigateToLikedHouses() {
-        viewModelScope.launch {
-            repository.getLikedHouses(getCurrentUserId()).collect { likedHouses ->
-                _uiState.update { it.copy(likedHouses = likedHouses) }
-            }
-        }
         _navigationState.value = NavigationState.LikedHouses
     }
 
@@ -98,25 +99,14 @@ class HouseViewModel(private val repository: HouseRepository) : ViewModel() {
     }
 
     fun navigateToMap() {
-        viewModelScope.launch {
-            repository.getLikedHouses(getCurrentUserId()).collect { likedHouses ->
-                _uiState.update { it.copy(likedHouses = likedHouses) }
-            }
-        }
         _navigationState.value = NavigationState.Map
     }
 
     fun navigateToChat() {
-        viewModelScope.launch {
-            repository.getLikedHouses(getCurrentUserId()).collect { likedHouses ->
-                _uiState.update { it.copy(likedHouses = likedHouses) }
-            }
-        }
         _navigationState.value = NavigationState.Chat
     }
 
     private fun getCurrentUserId(): String {
-        // In a real app, this would come from authentication
         return "user_123"
     }
 }
@@ -125,13 +115,29 @@ data class HouseUiState(
     val houses: List<House> = emptyList(),
     val likedHouses: List<House> = emptyList(),
     val isLoading: Boolean = true,
-    val selectedFilter: String = "Alles"
+    val selectedFilter: String = "Alles",
+    val searchQuery: String = ""
 ) {
     val filteredLikedHouses: List<House>
         get() = if (selectedFilter.equals("Alles", ignoreCase = true)) {
             likedHouses
         } else {
             likedHouses.filter { it.propertyType.equals(selectedFilter, ignoreCase = true) }
+        }
+
+    val searchedAndFilteredLikedHouses: List<House>
+        get() {
+            val categoryFiltered = filteredLikedHouses
+            return if (searchQuery.isBlank()) {
+                categoryFiltered
+            } else {
+                categoryFiltered.filter {
+                    it.title.contains(searchQuery, ignoreCase = true) ||
+                    it.address.contains(searchQuery, ignoreCase = true) ||
+                    it.description.contains(searchQuery, ignoreCase = true) ||
+                    it.propertyType.contains(searchQuery, ignoreCase = true)
+                }
+            }
         }
 }
 

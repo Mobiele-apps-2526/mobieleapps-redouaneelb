@@ -29,6 +29,8 @@ import com.example.osso.models.House
 @Composable
 fun FavoritesScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
     val filters = listOf("Alles", "Huis", "Appartement", "Studio")
+    // Use the new computed property for searching
+    val housesToShow = uiState.searchedAndFilteredLikedHouses
 
     Column(
         modifier = Modifier
@@ -37,11 +39,10 @@ fun FavoritesScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
     ) {
         Spacer(Modifier.height(80.dp))
 
-        // Search Bar
-        var searchText by remember { mutableStateOf("") }
+        // Search Bar - now connected to the ViewModel
         OutlinedTextField(
-            value = searchText,
-            onValueChange = { searchText = it },
+            value = uiState.searchQuery,
+            onValueChange = { viewModel.setSearchQuery(it) },
             label = { Text("Zoek prijs, locatie, titel,...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
@@ -71,13 +72,13 @@ fun FavoritesScreen(uiState: HouseUiState, viewModel: HouseViewModel) {
 
         Spacer(Modifier.height(16.dp))
 
-        // Liked Houses Grid
+        // Liked Houses Grid - uses the new list
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(uiState.filteredLikedHouses, key = { it.id }) {
+            items(housesToShow, key = { it.id }) {
                 house ->
                 FavoriteGridItem(house = house, onDislike = { viewModel.removeFromFavorites(house) })
             }

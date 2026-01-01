@@ -20,8 +20,8 @@ data class House(
     val agentEmail: String = "",
     val yearBuilt: Int = 0,
     val createdAt: Long = 0,
-    var isLiked: Boolean = false,
-    var isSwiped: Boolean = false
+    val isLiked: Boolean = false, // Changed from var to val
+    val isSwiped: Boolean = false // Changed from var to val
 )
 
 data class HousesResponse(
